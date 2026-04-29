@@ -118,9 +118,10 @@ function handleWheelScroll(e) {
         scrollPosition + windowHeight >= sectionBottom - scrollThreshold) {
       e.preventDefault();
       
-      // Infinite scroll: if at last section, loop to first
+      // Disable infinite scroll - only allow normal navigation
       if (currentSectionIndex >= sections.length - 1) {
-        triggerInfiniteTransition(currentSectionIndex, 0, 'down');
+        // At last section, don't wrap around
+        return;
       } else {
         triggerTransition(currentSectionIndex, currentSectionIndex + 1, 'down');
       }
@@ -130,9 +131,10 @@ function handleWheelScroll(e) {
                scrollPosition <= sectionTop + scrollThreshold) {
       e.preventDefault();
       
-      // Infinite scroll: if at first section, loop to last
+      // Disable infinite scroll - only allow normal navigation
       if (currentSectionIndex <= 0) {
-        triggerInfiniteTransition(currentSectionIndex, sections.length - 1, 'up');
+        // At first section, don't wrap around
+        return;
       } else {
         triggerTransition(currentSectionIndex, currentSectionIndex - 1, 'up');
       }
@@ -186,17 +188,19 @@ function handleKeyScroll(e) {
     const sectionBottom = sectionTop + currentSection.offsetHeight;
     
     if (direction > 0 && scrollPosition + windowHeight >= sectionBottom - 100) {
-      // Infinite scroll: if at last section, loop to first
+      // Disable infinite scroll - only allow normal navigation
       if (currentSectionIndex >= sections.length - 1) {
-        triggerInfiniteTransition(currentSectionIndex, 0, 'down');
+        // At last section, don't wrap around
+        return;
       } else {
         triggerTransition(currentSectionIndex, currentSectionIndex + 1, 'down');
       }
       return;
     } else if (direction < 0 && scrollPosition <= sectionTop + 100) {
-      // Infinite scroll: if at first section, loop to last
+      // Disable infinite scroll - only allow normal navigation
       if (currentSectionIndex <= 0) {
-        triggerInfiniteTransition(currentSectionIndex, sections.length - 1, 'up');
+        // At first section, don't wrap around
+        return;
       } else {
         triggerTransition(currentSectionIndex, currentSectionIndex - 1, 'up');
       }
@@ -248,18 +252,20 @@ function handleTouchMove(e) {
       
       if (scrollDirection > 0 && scrollPosition + windowHeight >= sectionBottom - 100) {
         e.preventDefault();
-        // Infinite scroll: if at last section, loop to first
+        // Disable infinite scroll - only allow normal navigation
         if (currentSectionIndex >= sections.length - 1) {
-          triggerInfiniteTransition(currentSectionIndex, 0, 'down');
+          // At last section, don't wrap around
+          return;
         } else {
           triggerTransition(currentSectionIndex, currentSectionIndex + 1, 'down');
         }
         return;
       } else if (scrollDirection < 0 && scrollPosition <= sectionTop + 100) {
         e.preventDefault();
-        // Infinite scroll: if at first section, loop to last
+        // Disable infinite scroll - only allow normal navigation
         if (currentSectionIndex <= 0) {
-          triggerInfiniteTransition(currentSectionIndex, sections.length - 1, 'up');
+          // At first section, don't wrap around
+          return;
         } else {
           triggerTransition(currentSectionIndex, currentSectionIndex - 1, 'up');
         }
@@ -312,8 +318,8 @@ function triggerTransition(fromIndex, toIndex, direction) {
       
       // Force background color to complete transition
       forceBackgroundColorComplete();
-    }, 300);
-  }, 300);
+    }, 150);
+  }, 150);
 }
 
 // Trigger infinite transition for seamless looping
@@ -367,8 +373,8 @@ function triggerInfiniteTransition(fromIndex, toIndex, direction) {
       isTransitioning = false;
       updateTimeline();
       forceBackgroundColorComplete();
-    }, 300);
-  }, 400);
+    }, 150);
+  }, 200);
 }
 
 // Update target background color based on section
@@ -443,9 +449,9 @@ function renderProjects() {
     const monthB = b.month || 6;
     
     if (yearA !== yearB) {
-      return yearA - yearB;
+      return yearB - yearA; // Reverse chronological order
     }
-    return monthA - monthB;
+    return monthB - monthA; // Reverse chronological order within same year
   });
   
   container.innerHTML = allProjects.map(project => `
@@ -598,9 +604,9 @@ function renderTimeline() {
     const monthB = b.month || 6;
     
     if (yearA !== yearB) {
-      return yearA - yearB;
+      return yearB - yearA; // Reverse chronological order
     }
-    return monthA - monthB;
+    return monthB - monthA; // Reverse chronological order within same year
   });
   
   // Group by year
@@ -619,15 +625,15 @@ function renderTimeline() {
     projectsByYear[year].push(project);
   });
   
-  // Get all years and sort them
-  const allYears = Object.keys(projectsByYear).sort((a, b) => parseInt(a) - parseInt(b));
+  // Get all years and sort them in reverse chronological order
+  const allYears = Object.keys(projectsByYear).sort((a, b) => parseInt(b) - parseInt(a));
   
   // Debug: Log the years to see what's happening
   console.log('All years found:', allYears);
   console.log('Projects by year:', projectsByYear);
   
-  // Find the earliest year to place Sections card before it
-  const earliestYear = Math.min(...allYears.map(year => parseInt(year)));
+  // Find the latest year to place Sections card before it
+  const latestYear = Math.max(...allYears.map(year => parseInt(year)));
   
   // Render timeline with section cards placed before the earliest year
   let timelineHTML = '';
@@ -699,7 +705,7 @@ function renderTimeline() {
         // Update timeline after scroll completes
         setTimeout(() => {
           updateTimeline();
-        }, 800);
+        }, 400);
       }
     });
   });
@@ -714,7 +720,7 @@ function renderTimeline() {
         // Update timeline after scroll completes
         setTimeout(() => {
           updateTimeline();
-        }, 800);
+        }, 400);
       }
     });
   });
@@ -840,7 +846,7 @@ function updateTimeline() {
         yearCards.forEach((yearCard, index) => {
           setTimeout(() => {
             yearCard.classList.add('year-visible');
-          }, index * 200);
+          }, index * 100);
         });
         
         // Then show project cards with staggered fly-in effect
@@ -848,7 +854,7 @@ function updateTimeline() {
           timelineItems.forEach((item, index) => {
             setTimeout(() => {
               item.classList.add('card-visible');
-            }, index * 150);
+            }, index * 75);
           });
           
           // Center the first active item after all animations
