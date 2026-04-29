@@ -108,9 +108,9 @@ function handleWheelScroll(e) {
     const sectionBottom = sectionTop + currentSection.offsetHeight;
     const sectionHeight = currentSection.offsetHeight;
     
-    // Require less momentum and shallower scroll to leave section for faster navigation
-    const scrollThreshold = Math.min(50, sectionHeight * 0.1); // Reduced from 100px and 20%
-    const momentumThreshold = 15; // Reduced from 30 for faster scrolling
+    // Require more momentum and deeper scroll to leave section to prevent accidental transitions
+    const scrollThreshold = Math.min(100, sectionHeight * 0.15); // Increased from 50px and 10%
+    const momentumThreshold = 25; // Increased from 15 to prevent accidental scrolling
     
     // Check if we're trying to scroll past section boundaries
     if (scrollDirection > 0 && 
@@ -187,7 +187,7 @@ function handleKeyScroll(e) {
     const sectionTop = currentSection.offsetTop;
     const sectionBottom = sectionTop + currentSection.offsetHeight;
     
-    if (direction > 0 && scrollPosition + windowHeight >= sectionBottom - 50) {
+    if (direction > 0 && scrollPosition + windowHeight >= sectionBottom - 100) {
       // Disable infinite scroll - only allow normal navigation
       if (currentSectionIndex >= sections.length - 1) {
         // At last section, don't wrap around
@@ -196,7 +196,7 @@ function handleKeyScroll(e) {
         triggerTransition(currentSectionIndex, currentSectionIndex + 1, 'down');
       }
       return;
-    } else if (direction < 0 && scrollPosition <= sectionTop + 50) {
+    } else if (direction < 0 && scrollPosition <= sectionTop + 100) {
       // Disable infinite scroll - only allow normal navigation
       if (currentSectionIndex <= 0) {
         // At first section, don't wrap around
@@ -250,7 +250,7 @@ function handleTouchMove(e) {
       const sectionTop = currentSection.offsetTop;
       const sectionBottom = sectionTop + currentSection.offsetHeight;
       
-      if (scrollDirection > 0 && scrollPosition + windowHeight >= sectionBottom - 50) {
+      if (scrollDirection > 0 && scrollPosition + windowHeight >= sectionBottom - 100) {
         e.preventDefault();
         // Disable infinite scroll - only allow normal navigation
         if (currentSectionIndex >= sections.length - 1) {
@@ -260,7 +260,7 @@ function handleTouchMove(e) {
           triggerTransition(currentSectionIndex, currentSectionIndex + 1, 'down');
         }
         return;
-      } else if (scrollDirection < 0 && scrollPosition <= sectionTop + 50) {
+      } else if (scrollDirection < 0 && scrollPosition <= sectionTop + 100) {
         e.preventDefault();
         // Disable infinite scroll - only allow normal navigation
         if (currentSectionIndex <= 0) {
@@ -726,12 +726,24 @@ function renderTimeline() {
   // Render timeline with section cards placed before the earliest year
   let timelineHTML = '';
   
-  // Add About and At Glance sections before years
+  // Add About, Skills, Contact, and At Glance sections before years
   timelineHTML += `
     <div class="timeline-item section-about" data-section="about">
       <div class="timeline-content">
         <h4>About</h4>
         <p class="timeline-date">Intro</p>
+      </div>
+    </div>
+    <div class="timeline-item section-skills" data-section="skills">
+      <div class="timeline-content">
+        <h4>Skills</h4>
+        <p class="timeline-date">Expertise</p>
+      </div>
+    </div>
+    <div class="timeline-item section-contact" data-section="contact">
+      <div class="timeline-content">
+        <h4>Contact</h4>
+        <p class="timeline-date">Reach Out</p>
       </div>
     </div>
     <div class="timeline-item section-at-glance" data-section="at-a-glance">
@@ -763,22 +775,7 @@ function renderTimeline() {
     `;
   });
   
-  // Add Skills and Contact sections after years
-  timelineHTML += `
-    <div class="timeline-item section-skills" data-section="skills">
-      <div class="timeline-content">
-        <h4>Skills</h4>
-        <p class="timeline-date">Expertise</p>
-      </div>
-    </div>
-    <div class="timeline-item section-contact" data-section="contact">
-      <div class="timeline-content">
-        <h4>Contact</h4>
-        <p class="timeline-date">Reach Out</p>
-      </div>
-    </div>
-  `;
-  
+    
   timeline.innerHTML = timelineHTML;
   
   // Add click handlers for section cards
