@@ -79,7 +79,7 @@ function handleWheelScroll(e) {
   const currentTime = Date.now();
   const deltaTime = currentTime - lastScrollTime;
   
-  if (deltaTime < 50) return; // Throttle rapid scrolling
+  if (deltaTime < 25) return; // Reduced throttle from 50ms for faster response
   
   lastScrollTime = currentTime;
   scrollDirection = e.deltaY > 0 ? 1 : -1;
@@ -108,9 +108,9 @@ function handleWheelScroll(e) {
     const sectionBottom = sectionTop + currentSection.offsetHeight;
     const sectionHeight = currentSection.offsetHeight;
     
-    // Require more momentum and deeper scroll to leave section
-    const scrollThreshold = Math.min(300, sectionHeight * 0.4); // At least 300px or 40% of section height
-    const momentumThreshold = 80; // Minimum scroll velocity
+    // Require less momentum and shallower scroll to leave section for faster navigation
+    const scrollThreshold = Math.min(50, sectionHeight * 0.1); // Reduced from 100px and 20%
+    const momentumThreshold = 15; // Reduced from 30 for faster scrolling
     
     // Check if we're trying to scroll past section boundaries
     if (scrollDirection > 0 && 
@@ -187,7 +187,7 @@ function handleKeyScroll(e) {
     const sectionTop = currentSection.offsetTop;
     const sectionBottom = sectionTop + currentSection.offsetHeight;
     
-    if (direction > 0 && scrollPosition + windowHeight >= sectionBottom - 100) {
+    if (direction > 0 && scrollPosition + windowHeight >= sectionBottom - 50) {
       // Disable infinite scroll - only allow normal navigation
       if (currentSectionIndex >= sections.length - 1) {
         // At last section, don't wrap around
@@ -196,7 +196,7 @@ function handleKeyScroll(e) {
         triggerTransition(currentSectionIndex, currentSectionIndex + 1, 'down');
       }
       return;
-    } else if (direction < 0 && scrollPosition <= sectionTop + 100) {
+    } else if (direction < 0 && scrollPosition <= sectionTop + 50) {
       // Disable infinite scroll - only allow normal navigation
       if (currentSectionIndex <= 0) {
         // At first section, don't wrap around
@@ -250,7 +250,7 @@ function handleTouchMove(e) {
       const sectionTop = currentSection.offsetTop;
       const sectionBottom = sectionTop + currentSection.offsetHeight;
       
-      if (scrollDirection > 0 && scrollPosition + windowHeight >= sectionBottom - 100) {
+      if (scrollDirection > 0 && scrollPosition + windowHeight >= sectionBottom - 50) {
         e.preventDefault();
         // Disable infinite scroll - only allow normal navigation
         if (currentSectionIndex >= sections.length - 1) {
@@ -260,7 +260,7 @@ function handleTouchMove(e) {
           triggerTransition(currentSectionIndex, currentSectionIndex + 1, 'down');
         }
         return;
-      } else if (scrollDirection < 0 && scrollPosition <= sectionTop + 100) {
+      } else if (scrollDirection < 0 && scrollPosition <= sectionTop + 50) {
         e.preventDefault();
         // Disable infinite scroll - only allow normal navigation
         if (currentSectionIndex <= 0) {
@@ -302,7 +302,7 @@ function triggerTransition(fromIndex, toIndex, direction) {
     behavior: 'smooth'
   });
   
-  // Handle transition animations
+  // Handle transition animations - reduced duration for faster navigation
   setTimeout(() => {
     // Remove transition classes
     fromSection.classList.remove('section-exiting');
@@ -315,11 +315,9 @@ function triggerTransition(fromIndex, toIndex, direction) {
       toSection.classList.remove('section-entering-active');
       isTransitioning = false;
       updateTimeline(); // Update timeline after transition
-      
-      // Force background color to complete transition
       forceBackgroundColorComplete();
-    }, 150);
-  }, 150);
+    }, 50); // Reduced from 100ms
+  }, 50); // Reduced from 100ms
 }
 
 // Trigger infinite transition for seamless looping
@@ -373,8 +371,8 @@ function triggerInfiniteTransition(fromIndex, toIndex, direction) {
       isTransitioning = false;
       updateTimeline();
       forceBackgroundColorComplete();
-    }, 150);
-  }, 200);
+    }, 100);
+  }, 150);
 }
 
 // Update target background color based on section
@@ -490,6 +488,96 @@ function renderProjects() {
       </div>
     </section>
   `).join('');
+}
+
+// Render projects index for "at a glance" section
+function renderProjectsIndex() {
+  const container = document.getElementById('projects-index');
+  if (!container) return;
+  
+  const allProjects = [...projects, ...prototypes].sort((a, b) => {
+    const yearA = new Date(a.dateRange).getFullYear();
+    const yearB = new Date(b.dateRange).getFullYear();
+    const monthA = a.month || 6;
+    const monthB = b.month || 6;
+    
+    if (yearA !== yearB) {
+      return yearB - yearA; // Reverse chronological order
+    }
+    return monthB - monthA; // Reverse chronological order within same year
+  });
+  
+  container.innerHTML = allProjects.map(project => `
+    <div class="project-index-card ${project.prototype ? 'prototype' : ''}" onclick="scrollToProject('${project.id}')">
+      <div class="project-index-header">
+        <h3 class="project-index-title">${project.title}</h3>
+        <div class="project-index-badges">
+          ${project.prototype ? '<span class="project-index-badge prototype">Prototype</span>' : ''}
+          <span class="project-index-badge ${project.release === 'Released' ? 'released' : 'unreleased'}">${project.release}</span>
+        </div>
+      </div>
+      <p class="project-index-date">${getMonthName(project.month || 0)} ${project.dateRange}</p>
+      <p class="project-index-description">${project.description}</p>
+      ${project.skills && project.skills.length > 0 ? `
+        <div class="project-index-skills">
+          ${project.skills.slice(0, 3).map(skill => `
+            <span class="project-index-skill">${skill}</span>
+          `).join('')}
+          ${project.skills.length > 3 ? `<span class="project-index-skill">+${project.skills.length - 3} more</span>` : ''}
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+}
+
+// Scroll to specific project
+function scrollToProject(projectId) {
+  const projectSection = document.querySelector(`.project-section[data-id="${projectId}"]`);
+  if (projectSection) {
+    projectSection.scrollIntoView({ behavior: 'smooth' });
+    setTimeout(() => {
+      updateTimeline();
+    }, 200);
+  }
+}
+
+// Toggle year projects visibility
+function toggleYearProjects(year) {
+  const yearProjects = document.getElementById(`year-projects-${year}`);
+  const yearLabel = document.querySelector(`[data-year="${year}"] .year-label`);
+  
+  if (yearProjects) {
+    const isCollapsed = yearProjects.style.display === 'none';
+    yearProjects.style.display = isCollapsed ? 'flex' : 'none';
+    yearLabel.textContent = `${year} ${isCollapsed ? '▼' : '▶'}`;
+  }
+}
+
+// Collapse all years except the specified one
+function collapseAllYearsExcept(exceptYear = null) {
+  const allYears = document.querySelectorAll('.timeline-year[data-year]');
+  allYears.forEach(yearElement => {
+    const year = yearElement.dataset.year;
+    const yearProjects = document.getElementById(`year-projects-${year}`);
+    const yearLabel = yearElement.querySelector('.year-label');
+    
+    if (yearProjects && yearLabel) {
+      if (year === exceptYear) {
+        // Expand this year
+        yearProjects.style.display = 'flex';
+        yearLabel.textContent = `${year} ▼`;
+      } else {
+        // Collapse all other years
+        yearProjects.style.display = 'none';
+        yearLabel.textContent = `${year} ▶`;
+      }
+    }
+  });
+}
+
+// Initialize all years as collapsed
+function initializeCollapsedYears() {
+  collapseAllYearsExcept();
 }
 
 // Generate media content based on project data
@@ -638,36 +726,18 @@ function renderTimeline() {
   // Render timeline with section cards placed before the earliest year
   let timelineHTML = '';
   
-  // Add Sections card at the very beginning
+  // Add About and At Glance sections before years
   timelineHTML += `
-    <!-- Section Cards -->
-    <div class="timeline-year">
-      <span class="year-label">Sections</span>
-      <div class="year-projects">
-        <div class="timeline-item section-about" data-section="about">
-          <div class="timeline-content">
-            <h4>About</h4>
-            <p class="timeline-date">Intro</p>
-          </div>
-        </div>
-        <div class="timeline-item section-skills" data-section="skills">
-          <div class="timeline-content">
-            <h4>Skills</h4>
-            <p class="timeline-date">Expertise</p>
-          </div>
-        </div>
-        <div class="timeline-item section-gallery" data-section="gallery">
-          <div class="timeline-content">
-            <h4>Gallery</h4>
-            <p class="timeline-date">Artwork</p>
-          </div>
-        </div>
-        <div class="timeline-item section-contact" data-section="contact">
-          <div class="timeline-content">
-            <h4>Contact</h4>
-            <p class="timeline-date">Reach Out</p>
-          </div>
-        </div>
+    <div class="timeline-item section-about" data-section="about">
+      <div class="timeline-content">
+        <h4>About</h4>
+        <p class="timeline-date">Intro</p>
+      </div>
+    </div>
+    <div class="timeline-item section-at-glance" data-section="at-a-glance">
+      <div class="timeline-content">
+        <h4>At Glance</h4>
+        <p class="timeline-date">Overview</p>
       </div>
     </div>
   `;
@@ -676,9 +746,9 @@ function renderTimeline() {
   allYears.forEach(year => {
     timelineHTML += `
       <!-- Year ${year} -->
-      <div class="timeline-year">
-        <span class="year-label">${year}</span>
-        <div class="year-projects">
+      <div class="timeline-year" data-year="${year}">
+        <span class="year-label collapsible" onclick="toggleYearProjects('${year}')">${year} ▼</span>
+        <div class="year-projects" id="year-projects-${year}">
           ${(projectsByYear[year] || []).map(project => `
             <div class="timeline-item ${project.prototype ? 'prototype' : ''}" 
                  data-project-id="${project.id}">
@@ -693,6 +763,22 @@ function renderTimeline() {
     `;
   });
   
+  // Add Skills and Contact sections after years
+  timelineHTML += `
+    <div class="timeline-item section-skills" data-section="skills">
+      <div class="timeline-content">
+        <h4>Skills</h4>
+        <p class="timeline-date">Expertise</p>
+      </div>
+    </div>
+    <div class="timeline-item section-contact" data-section="contact">
+      <div class="timeline-content">
+        <h4>Contact</h4>
+        <p class="timeline-date">Reach Out</p>
+      </div>
+    </div>
+  `;
+  
   timeline.innerHTML = timelineHTML;
   
   // Add click handlers for section cards
@@ -705,7 +791,7 @@ function renderTimeline() {
         // Update timeline after scroll completes
         setTimeout(() => {
           updateTimeline();
-        }, 400);
+        }, 200);
       }
     });
   });
@@ -720,7 +806,7 @@ function renderTimeline() {
         // Update timeline after scroll completes
         setTimeout(() => {
           updateTimeline();
-        }, 400);
+        }, 200);
       }
     });
   });
@@ -793,10 +879,10 @@ function updateTimeline() {
     
     if (currentSectionType === 'about') {
       targetColor = { r: 254, g: 249, b: 231 };  // Warm cream
+    } else if (currentSectionType === 'at-a-glance') {
+      targetColor = { r: 240, g: 248, b: 255 };  // Light blue
     } else if (currentSectionType === 'skills') {
       targetColor = { r: 243, g: 231, b: 254 };  // Soft purple
-    } else if (currentSectionType === 'gallery') {
-      targetColor = { r: 254, g: 231, b: 240 };  // Soft pink
     } else if (currentSectionType === 'contact') {
       targetColor = { r: 231, g: 254, b: 243 };  // Soft green
     } else {
@@ -827,7 +913,7 @@ function updateTimeline() {
         setTimeout(() => {
           section.style.transform = '';
           section.style.opacity = '';
-        }, 300);
+        }, 150);
       });
     }
     lastSectionIndex = currentIndex;
@@ -906,13 +992,25 @@ function updateTimeline() {
   if (currentSection) {
     let activeItem = null;
     
-    if (currentSectionType === 'about' || currentSectionType === 'skills' || currentSectionType === 'gallery' || currentSectionType === 'contact') {
+    if (currentSectionType === 'about' || currentSectionType === 'at-a-glance' || currentSectionType === 'skills' || currentSectionType === 'contact') {
       // Handle section cards
       activeItem = document.querySelector(`.timeline-item[data-section="${currentSectionType}"]`);
+      
+      // When on sections, collapse all years
+      collapseAllYearsExcept();
     } else {
       // Handle project cards
       const projectId = currentSection.dataset.id;
       activeItem = document.querySelector(`.timeline-item[data-project-id="${projectId}"]`);
+      
+      // Find which year this project belongs to and expand only that year
+      if (activeItem) {
+        const projectData = [...projects, ...prototypes].find(p => p.id === projectId);
+        if (projectData) {
+          const projectYear = projectData.dateRange;
+          collapseAllYearsExcept(projectYear);
+        }
+      }
     }
     
     if (activeItem) {
@@ -985,6 +1083,52 @@ window.addEventListener('resize', () => {
   }, 150);
 });
 
+// Initialize timeline scrolling functionality
+function initTimelineScrolling() {
+  const timeline = document.querySelector('.timeline');
+  if (!timeline) return;
+  
+  let isDragging = false;
+  let startX = 0;
+  let scrollLeft = 0;
+  
+  // Mouse wheel scrolling
+  timeline.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    timeline.scrollLeft += e.deltaY;
+  });
+  
+  // Drag scrolling
+  timeline.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    timeline.style.cursor = 'grabbing';
+    startX = e.pageX - timeline.offsetLeft;
+    scrollLeft = timeline.scrollLeft;
+  });
+  
+  timeline.addEventListener('mouseleave', () => {
+    isDragging = false;
+    timeline.style.cursor = 'grab';
+  });
+  
+  timeline.addEventListener('mouseup', () => {
+    isDragging = false;
+    timeline.style.cursor = 'grab';
+  });
+  
+  timeline.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const x = e.pageX - timeline.offsetLeft;
+    const walk = (x - startX) * 2;
+    timeline.scrollLeft = scrollLeft - walk;
+  });
+  
+  // Set initial cursor style
+  timeline.style.cursor = 'grab';
+}
+
+
 
 
 
@@ -992,10 +1136,17 @@ window.addEventListener('resize', () => {
 document.addEventListener('DOMContentLoaded', async () => {
   await loadProjectData();
   renderProjects();
+  renderProjectsIndex();
   renderTimeline();
+  
+  // Initialize all years as collapsed
+  initializeCollapsedYears();
 
   // Initialize scroll hijacking
   initScrollHijacking();
+  
+  // Initialize timeline drag/scroll
+  initTimelineScrolling();
   
   // Initialize media components
   initMediaComponents();
